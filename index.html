@@ -228,6 +228,29 @@ td.num { font-variant-numeric: tabular-nums; }
 .toast.err { background: var(--danger); color: #fff; }
 .loading { padding: 80px 0; text-align: center; color: var(--muted); }
 
+.badge {
+  position: absolute; top: 10px; left: 10px; max-width: calc(100% - 56px);
+  padding: 4px 10px; border-radius: 999px; background: var(--surface); color: var(--accent);
+  font-size: 13px; font-weight: 700; box-shadow: 0 1px 4px rgba(0, 0, 0, .18); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.badge.last { background: var(--danger); color: #fff; }
+.card.off .badge { display: none; }
+
+/* Phones: two cards per row so the whole menu fits on a few screens. */
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { border-radius: 12px; }
+  .card-body { padding: 9px 10px 11px; gap: 3px; }
+  .card-name { font-size: 16px; }
+  .card-ing { font-size: 12.5px; line-height: 1.45; }
+  .opts { padding: 0 10px 10px; gap: 5px; }
+  .opt { padding: 5px 11px; font-size: 13px; }
+  .check { top: 7px; right: 7px; width: 24px; height: 24px; font-size: 13px; }
+  .badge { top: 7px; left: 7px; max-width: calc(100% - 40px); padding: 3px 8px; font-size: 11.5px; }
+  .reason { left: 6px; right: 6px; top: 6px; padding: 4px 7px; font-size: 11.5px; }
+  .sec-head h2 { font-size: 26px; }
+}
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -347,6 +370,7 @@ function cardHTML(it, kind) {
       <div class="card-body"><div class="card-name">${esc(it.name)}</div>${it.ingredients ? `<div class="card-ing">${esc(it.ingredients)}</div>` : ''}</div>
     </button>
     ${opts.length ? `<div class="opts" role="group" aria-label="${esc(it.name)} 옵션">${opts.map(o => `<button type="button" class="opt" data-opt="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join('')}</div>` : ''}
+    ${it.badge ? `<span class="badge${it.badge.indexOf('마지막') === 0 ? ' last' : ''}">${esc(it.badge)}</span>` : ''}
     <span class="check" aria-hidden="true">✓</span>
     <span class="reason" hidden></span>
   </div>`;
