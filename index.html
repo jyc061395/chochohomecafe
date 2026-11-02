@@ -263,8 +263,8 @@ td.num { font-variant-numeric: tabular-nums; }
 .rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .rules li { position: relative; padding: 12px 14px 12px 34px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
 .rules li::before { content: ""; position: absolute; left: 15px; top: 21px; width: 8px; height: 8px; border-radius: 50%; background: var(--pick); }
-.about-link { text-align: center; margin: 28px 0 0; }
-.about-link button { background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 14px; padding: 8px; }
+.back-btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+.back-btn:hover { background: var(--bg); }
 
 /* Phones: two cards per row so the whole menu fits on a few screens. */
 @media (max-width: 560px) {
@@ -400,19 +400,6 @@ function renderIntro() {
         </div>
       </header>
 
-      <section class="intro-next" id="introNext" aria-live="polite">
-        <p class="eyebrow">이번 오픈</p>
-        <p class="muted" style="margin:0">오픈 소식을 불러오는 중…</p>
-      </section>
-
-      <section class="intro-sec">
-        <h2>초초홈카페는요</h2>
-        <p>‘초초’는 셰프가 옛 회사에서 불리던 별명이에요.</p>
-        <p>주말에 브런치 한 번 먹으러 나가면 지갑이 울더라고요. 그래서 생각했죠. <b>그냥 집으로 가져오면 되잖아?</b></p>
-        <p>메뉴는 진짜 카페처럼, 가격은 0원. 대신 서비스는 셰프 기분 따라 달라질 수 있어요.</p>
-        <p class="sign">초초 셰프 드림</p>
-      </section>
-
       <section class="intro-sec">
         <h2>이용 방법</h2>
         <ol class="steps">
@@ -422,20 +409,12 @@ function renderIntro() {
         </ol>
       </section>
 
-      <section class="intro-sec">
-        <h2>초초홈카페 규칙</h2>
-        <ul class="rules">
-          <li>음식은 1인 1개. 셰프 힘들어요 🥲</li>
-          <li>시간 맞춰 와서 먹기. 음식 식어요!</li>
-          <li>마감 시간이 지나면 주문 끝. 셰프도 장 보러 가야 해요 🛒</li>
-          <li>인기 메뉴는 금방 사라져요. 고민은 짧게 🔥</li>
-          <li>먹고 싶은 메뉴가 있나요? 셰프에게 살짝 알려 주세요. 다음 메뉴에 나올지도 몰라요 👀</li>
-        </ul>
+      <section class="intro-next" id="introNext" aria-live="polite">
+        <p class="eyebrow">이번 이벤트</p>
+        <p class="muted" style="margin:0">이벤트 소식을 불러오는 중…</p>
       </section>
 
-      <button type="button" class="btn big" id="enterBtnBottom">메뉴 보러 가기 →</button>
     </div>`;
-  $('#enterBtnBottom').addEventListener('click', enterMenu);
   if (F.menu || F.loadError) updateIntroEvent();
 }
 function updateIntroEvent() {
@@ -443,18 +422,22 @@ function updateIntroEvent() {
   if (!box) return;
   const ev = F.menu && F.menu.event;
   if (!ev) {
-    box.innerHTML = `<p class="eyebrow">이번 오픈</p>
-      <p class="next-name">${F.loadError ? '오픈 소식을 불러오지 못했어요' : '지금은 준비 중이에요'}</p>
-      <p class="muted" style="margin:0">${F.loadError ? '잠시 후 새로고침해 주세요.' : '다음 오픈을 기다려 주세요!'}</p>`;
+    box.innerHTML = `<p class="eyebrow">이번 이벤트</p>
+      <p class="next-name">${F.loadError ? '이벤트 소식을 불러오지 못했어요' : '지금은 준비 중이에요'}</p>
+      <p class="muted" style="margin:0">${F.loadError ? '잠시 후 새로고침해 주세요.' : '다음 이벤트를 기다려 주세요!'}</p>`;
     return;
   }
   const when = [fmtDate(ev.date), fmtTime(ev.time)].filter(Boolean).join(' ');
-  box.innerHTML = `<p class="eyebrow">이번 오픈</p>
+  box.innerHTML = `<p class="eyebrow">이번 이벤트</p>
     <p class="next-name">${esc(ev.name)}</p>
     ${when ? `<p class="next-when">${esc(when)}</p>` : ''}
     ${ev.deadline ? `<p class="next-deadline${F.menu.closed ? ' closed' : ''}">${F.menu.closed ? '주문이 마감됐어요' : esc(fmtDeadline(ev.deadline)) + '까지 주문'}</p>` : ''}
     <button type="button" class="btn" id="enterBtnTop">메뉴 보러 가기 →</button>`;
   $('#enterBtnTop').addEventListener('click', enterMenu);
+}
+function addBackButton() {
+  $('#app').insertAdjacentHTML('afterbegin', `<button type="button" class="back-btn" id="backBtn">← 처음으로</button>`);
+  $('#backBtn').addEventListener('click', showIntro);
 }
 function showIntro() {
   F.intro = true;
@@ -500,6 +483,7 @@ function renderFamily() {
   $('#bar').hidden = true;
   if (!m.event) {
     $('#app').innerHTML = `<div class="empty"><p class="eyebrow">${esc(CAFE)}</p><h1>지금은 카페 문이 닫혀 있어요</h1><p class="muted">다음 메뉴가 올라오면 다시 확인해 주세요.</p></div>`;
+    addBackButton();
     return;
   }
   // Drop picks that are no longer allowed.
@@ -531,8 +515,7 @@ function renderFamily() {
         <button class="btn big" id="sendBtn" type="submit" style="margin-top:8px">주문 보내기</button>
       </form>
     </section>`}`;
-  $('#app').insertAdjacentHTML('beforeend', `<p class="about-link"><button type="button" id="aboutBtn">${esc(CAFE)}란?</button></p>`);
-  $('#aboutBtn').addEventListener('click', showIntro);
+  addBackButton();
   $$('#app .card').forEach(c => {
     $('.card-hit', c).addEventListener('click', () => toggleItem(c.dataset.id, c.dataset.kind));
     $$('.opt', c).forEach(b => b.addEventListener('click', () => chooseOption(c.dataset.id, c.dataset.kind, b.dataset.opt)));
