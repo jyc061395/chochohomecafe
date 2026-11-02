@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>초초홈카페</title>
+<meta name="description" content="메뉴를 보고 미리 주문해 주세요">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="초초홈카페">
+<meta property="og:title" content="초초홈카페">
+<meta property="og:description" content="메뉴를 보고 미리 주문해 주세요">
+<meta property="og:image" content="https://chochohomecafe.vercel.app/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://chochohomecafe.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one centered column; menu cards in a wrapping grid; order panel at the end with a sticky pick counter. */
+:root {
+  --bg: #EDF0E8;
+  --surface: #FFFFFF;
+  --ink: #1F2A24;
+  --muted: #5B6860;
+  --line: #D3DACF;
+  --accent: #7A4A2E;
+  --accent-ink: #FFFFFF;
+  --pick: #D9A43A;
+  --pick-soft: #FAF0D6;
+  --off: #E2E5DE;
+  --danger: #A8402F;
+  --ok: #3F7A4F;
+  --display: "Gowun Batang", "Apple SD Gothic Neo", Georgia, "Times New Roman", serif;
+  --body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141A16;
+    --surface: #1D2520;
+    --ink: #ECEFE8;
+    --muted: #9BA79F;
+    --line: #2F3933;
+    --accent: #D9A07A;
+    --accent-ink: #1B120C;
+    --pick: #E3B04B;
+    --pick-soft: #372F1C;
+    --off: #252C27;
+    --danger: #E5816D;
+    --ok: #7DBB8C;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--body);
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+img { max-width: 100%; display: block; }
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--pick); outline-offset: 2px; }
+
+.wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 120px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+
+/* ---------- Family: hero ---------- */
+.hero { display: grid; gap: 10px; padding-block: 16px 28px; border-bottom: 1px solid var(--line); margin-bottom: 28px; }
+.hero h1 { font-size: clamp(34px, 7vw, 56px); line-height: 1.05; }
+.when { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-weight: 500; font-variant-numeric: tabular-nums; }
+.note { max-width: 60ch; color: var(--muted); margin: 0; }
+
+.sec { display: grid; gap: 14px; margin-bottom: 36px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sec-head h2 { font-size: 30px; }
+.hint { color: var(--muted); font-size: 14px; }
+
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+.card {
+  position: relative; display: flex; flex-direction: column; text-align: left;
+  background: var(--surface); border: 2px solid var(--line); border-radius: 14px;
+  padding: 0; overflow: hidden; cursor: pointer; transition: border-color .15s, transform .15s;
+}
+.card:hover:not(:disabled) { border-color: var(--muted); }
+.card[aria-pressed="true"] { border-color: var(--pick); background: var(--pick-soft); }
+.card:disabled { cursor: not-allowed; }
+.card:disabled .photo, .card:disabled .card-body { opacity: .45; filter: grayscale(1); }
+.photo { aspect-ratio: 4 / 3; width: 100%; max-width: 100%; background: var(--off); overflow: hidden; }
+.photo img { width: 100%; height: 100%; object-fit: cover; }
+.ph { width: 100%; height: 100%; display: grid; place-items: center; font-family: var(--display); font-size: 44px; color: var(--muted); }
+.card-body { padding: 12px 14px 14px; display: grid; gap: 4px; min-width: 0; }
+.card-name { font-family: var(--display); font-size: 20px; line-height: 1.2; }
+.card-hit { display: flex; flex-direction: column; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: inherit; flex: 1; }
+.card-hit:disabled { cursor: not-allowed; }
+.card.on, .card.on:hover:not(:disabled) { border-color: var(--pick); background: var(--pick-soft); }
+.card.on .check { opacity: 1; transform: none; }
+.card.off .photo, .card.off .card-body, .card.off .opts { opacity: .45; filter: grayscale(1); }
+.opts { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 14px; }
+.opt { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 14px; font-weight: 500; }
+.opt[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.opt:disabled { cursor: not-allowed; }
+.deadline { margin: 0; font-weight: 600; color: var(--accent); }
+.deadline.closed { color: var(--danger); }
+.card-ing { font-size: 14px; color: var(--muted); }
+.check {
+  position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--pick); color: #1F1A0E; font-weight: 700;
+  opacity: 0; transform: scale(.6); transition: .15s;
+}
+.card[aria-pressed="true"] .check { opacity: 1; transform: none; }
+.reason {
+  position: absolute; left: 10px; right: 10px; top: 10px; padding: 6px 10px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--line); font-size: 13px; font-weight: 600; color: var(--ink);
+}
+
+/* ---------- Family: order panel ---------- */
+.order-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 14px; }
+.order-panel h2 { font-size: 26px; }
+.picks { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.picks li { display: flex; gap: 10px; align-items: baseline; }
+.picks .k { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); width: 56px; flex: none; }
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 500; font-size: 14px; }
+input[type=text], input[type=password], input[type=number], input[type=date], input[type=time], input[type=datetime-local], input[type=url], select, textarea {
+  width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+}
+textarea { min-height: 90px; resize: vertical; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: 999px; border: 1px solid transparent; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none;
+}
+.btn:disabled { opacity: .55; cursor: progress; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn.small { padding: 7px 14px; font-size: 14px; }
+.btn.big { padding: 15px 24px; font-size: 17px; width: 100%; }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: var(--surface); border-top: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+}
+.bar span { font-weight: 500; }
+
+.done { text-align: center; display: grid; gap: 16px; justify-items: center; padding-block: 40px; }
+.done h1 { font-size: clamp(32px, 6vw, 48px); }
+.done .order-panel { text-align: left; width: min(100%, 460px); }
+.cup { width: 72px; height: 72px; border-radius: 50%; background: var(--pick-soft); display: grid; place-items: center; font-size: 34px; color: var(--accent); font-family: var(--display); }
+
+.empty { padding: 60px 0; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.empty h1 { font-size: 34px; }
+
+/* ---------- Admin ---------- */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+.topbar h1 { font-size: 28px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-weight: 500; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.list { display: grid; gap: 10px; }
+.item-row { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.item-row > div:first-child { min-width: 0; display: grid; gap: 2px; }
+.item-row h3 { font-size: 20px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.tag.live { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+.tag.lim { color: var(--accent); border-color: var(--accent); }
+.tag.off { color: var(--danger); border-color: var(--danger); }
+.admin-card .card-body { gap: 6px; }
+.meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.stat b { display: block; font-family: var(--display); font-size: 30px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; }
+.login { max-width: 380px; margin: 12vh auto 0; display: grid; gap: 14px; }
+
+.modal-bg { position: fixed; inset: 0; z-index: 20; background: rgba(10, 14, 12, .55); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+.modal { background: var(--surface); border-radius: 16px; width: min(100%, 640px); max-height: calc(100vh - 32px); overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.modal > * { flex: none; }
+.modal h2 { font-size: 26px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.x { background: none; border: 0; font-size: 28px; line-height: 1; cursor: pointer; color: var(--muted); padding: 4px 8px; }
+.two { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.checkline { display: flex; gap: 10px; align-items: flex-start; }
+.checkline input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+.checkline small { display: block; color: var(--muted); }
+.pick-list { display: grid; gap: 6px; max-height: 300px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.pick-list label { display: flex; gap: 10px; align-items: center; padding: 6px; border-radius: 8px; cursor: pointer; }
+.pick-list label:hover { background: var(--bg); }
+.pick-row { display: flex; align-items: center; gap: 6px; }
+.pick-row label { flex: 1; min-width: 0; }
+.move { display: flex; gap: 4px; flex: none; }
+.mv { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 16px; line-height: 1; }
+.mv:hover { background: var(--bg); }
+.pick-list img, .pick-list .thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--off); flex: none; }
+.preview { width: 100%; max-width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: var(--off); }
+.preview img { width: 100%; height: 100%; object-fit: cover; }
+.howto { white-space: pre-wrap; font-family: var(--body); line-height: 1.7; background: var(--bg); border-radius: 10px; padding: 14px; margin: 0; }
+.group-title { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 6px 0; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  z-index: 30; background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 12px;
+  max-width: min(92vw, 480px); font-weight: 500; box-shadow: 0 6px 24px rgba(0,0,0,.2);
+}
+.toast.err { background: var(--danger); color: #fff; }
+.loading { padding: 80px 0; text-align: center; color: var(--muted); }
+
+.badge {
+  position: absolute; top: 10px; left: 10px; max-width: calc(100% - 56px);
+  padding: 4px 10px; border-radius: 999px; background: var(--surface); color: var(--accent);
+  font-size: 13px; font-weight: 700; box-shadow: 0 1px 4px rgba(0, 0, 0, .18); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.badge.last { background: var(--danger); color: #fff; }
+.card.off .badge { display: none; }
+
+/* ---------- Welcome page ---------- */
+.intro { display: grid; gap: 26px; max-width: 680px; margin: 0 auto; }
+.intro-hero { position: relative; border-radius: 20px; overflow: hidden; background: var(--off); }
+.intro-hero img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.intro-hero-text { position: absolute; left: 0; right: 0; bottom: 0; padding: 70px 22px 20px; background: linear-gradient(rgba(12, 16, 13, 0), rgba(12, 16, 13, .8)); color: #fff; }
+.intro-hero-text .eyebrow { color: rgba(255, 255, 255, .85); margin: 0 0 4px; }
+.intro-hero h1 { font-size: clamp(40px, 11vw, 64px); line-height: 1.05; }
+.tagline { margin: 8px 0 0; font-size: 17px; font-weight: 500; }
+.intro-hero.noimg .intro-hero-text { position: static; background: none; color: var(--ink); padding: 28px 22px; }
+.intro-hero.noimg .intro-hero-text .eyebrow { color: var(--muted); }
+.intro-next { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: grid; gap: 6px; justify-items: start; }
+.intro-next .eyebrow { margin: 0; }
+.next-name { margin: 0; font-family: var(--display); font-size: 26px; line-height: 1.2; }
+.next-when { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.next-deadline { margin: 0 0 8px; color: var(--accent); font-weight: 600; }
+.next-deadline.closed { color: var(--danger); }
+.intro-sec { display: grid; gap: 10px; }
+.intro-sec h2 { font-size: 26px; }
+.intro-sec p { margin: 0; max-width: 60ch; }
+.sign { font-family: var(--display); color: var(--accent); font-size: 18px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 36px 1fr; column-gap: 12px; align-items: start; }
+.steps li::before { content: counter(step); grid-row: span 2; width: 36px; height: 36px; border-radius: 50%; background: var(--pick-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; }
+.steps li span { color: var(--muted); font-size: 15px; }
+.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.rules li { position: relative; padding: 12px 14px 12px 34px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.rules li::before { content: ""; position: absolute; left: 15px; top: 21px; width: 8px; height: 8px; border-radius: 50%; background: var(--pick); }
+.about-link { text-align: center; margin: 28px 0 0; }
+.about-link button { background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 14px; padding: 8px; }
+
+/* Phones: two cards per row so the whole menu fits on a few screens. */
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { border-radius: 12px; }
+  .card-body { padding: 9px 10px 11px; gap: 3px; }
+  .card-name { font-size: 16px; }
+  .card-ing { font-size: 12.5px; line-height: 1.45; }
+  .opts { padding: 0 10px 10px; gap: 5px; }
+  .opt { padding: 5px 11px; font-size: 13px; }
+  .check { top: 7px; right: 7px; width: 24px; height: 24px; font-size: 13px; }
+  .badge { top: 7px; left: 7px; max-width: calc(100% - 40px); padding: 3px 8px; font-size: 11.5px; }
+  .reason { left: 6px; right: 6px; top: 6px; padding: 4px 7px; font-size: 11.5px; }
+  .sec-head h2 { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="loading">메뉴를 불러오는 중…</div></div>
+<div id="bar" class="bar" hidden></div>
+<div id="modal" class="modal-bg" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const MODE = location.pathname.replace(/\/+$/, '') === '/admin' ? 'admin' : 'family';
+const CAFE = '초초홈카페';
+const API_URL = "https://script.google.com/macros/s/AKfycbxwp4y6x1ovD5uYMxmUkCEN4AFlmWDc5JgAGHYd3-OH-uFxpAMUfbO6Qf_IyQ3l_PM/exec";
+const INTRO_IMG = '/intro.jpg';
+
+/* ---------- Shared helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cleanErr = e => String((e && e.message) || e || '문제가 생겼어요.').replace(/^(Error|Exception):\s*/, '');
+
+// Talks to the Google Sheet through the Apps Script data connection.
+async function api(fn, ...args) {
+  let res;
+  try {
+    res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn, args }) });
+  } catch (e) {
+    throw new Error('인터넷 연결을 확인하고 다시 시도해 주세요.');
+  }
+  let out;
+  try { out = await res.json(); } catch (e) { throw new Error('서버 응답을 읽지 못했어요. 잠시 후 다시 시도해 주세요.'); }
+  if (!out.ok) throw new Error(out.error || '문제가 생겼어요.');
+  return out.data;
+}
+function store(kind, key, val) {
+  try {
+    const s = kind === 'session' ? sessionStorage : localStorage;
+    if (val === undefined) return s.getItem(key);
+    if (val === null) s.removeItem(key); else s.setItem(key, val);
+  } catch (e) { return null; }
+}
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, isErr ? 6000 : 3000);
+}
+function fmtDate(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+  if (!m) return d || '';
+  return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('ko-KR', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+function fmtDeadline(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(d || '');
+  if (!m) return d || '';
+  const dt = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  const opts = { month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric' };
+  if (+m[5]) opts.minute = '2-digit';
+  return dt.toLocaleString('ko-KR', opts);
+}
+function fmtTime(t) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(t || '');
+  if (!m) return t || '';
+  return new Date(2000, 0, 1, +m[1], +m[2]).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
+}
+function photo(url, name) {
+  return url
+    ? `<img src="${esc(url)}" alt="${esc(name)}" loading="lazy" referrerpolicy="no-referrer">`
+    : `<div class="ph" aria-hidden="true">${esc((name || '?').trim().charAt(0).toUpperCase())}</div>`;
+}
+function openModal(html) { const m = $('#modal'); m.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`; m.hidden = false; }
+function closeModal() { const m = $('#modal'); m.hidden = true; m.innerHTML = ''; }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
+
+/* =====================================================================
+   FAMILY VIEW
+   ===================================================================== */
+const F = { menu: null, food: '', drinks: new Set(), choice: {}, name: store('local', 'cafeName') || '', sending: false };
+
+async function startFamily() {
+  F.intro = true;
+  renderIntro();
+  try { F.menu = await api('getMenu'); } catch (e) { F.loadError = e; }
+  if (F.intro) updateIntroEvent(); else showMenu();
+}
+function showMenu() {
+  $('#bar').hidden = true;
+  if (F.loadError) {
+    $('#app').innerHTML = `<div class="empty"><h1>메뉴를 불러오지 못했어요</h1><p class="muted">${esc(cleanErr(F.loadError))}</p><button class="btn" onclick="location.reload()">다시 시도</button></div>`;
+  } else if (!F.menu) {
+    $('#app').innerHTML = '<div class="loading">메뉴를 불러오는 중…</div>';
+  } else {
+    renderFamily();
+  }
+}
+function enterMenu() {
+  F.intro = false;
+  window.scrollTo(0, 0);
+  showMenu();
+}
+
+/* ----- Welcome page (shown first) ----- */
+function renderIntro() {
+  $('#bar').hidden = true;
+  $('#app').innerHTML = `
+    <div class="intro">
+      <header class="intro-hero${INTRO_IMG ? '' : ' noimg'}">
+        ${INTRO_IMG ? `<img src="${INTRO_IMG}" alt="${esc(CAFE)} 테이블">` : ''}
+        <div class="intro-hero-text">
+          <p class="eyebrow">어서 오세요</p>
+          <h1>${esc(CAFE)}</h1>
+          <p class="tagline">브런치가 너무 비싸서, 집으로 가져왔어요.</p>
+        </div>
+      </header>
+
+      <section class="intro-next" id="introNext" aria-live="polite">
+        <p class="eyebrow">이번 오픈</p>
+        <p class="muted" style="margin:0">오픈 소식을 불러오는 중…</p>
+      </section>
+
+      <section class="intro-sec">
+        <h2>초초홈카페는요</h2>
+        <p>‘초초’는 셰프가 옛 회사에서 불리던 별명이에요.</p>
+        <p>주말에 브런치 한 번 먹으러 나가면 지갑이 울더라고요. 그래서 생각했죠. <b>그냥 집으로 가져오면 되잖아?</b></p>
+        <p>메뉴는 진짜 카페처럼, 가격은 0원. 대신 서비스는 셰프 기분 따라 달라질 수 있어요.</p>
+        <p class="sign">초초 셰프 드림</p>
+      </section>
+
+      <section class="intro-sec">
+        <h2>이용 방법</h2>
+        <ol class="steps">
+          <li><b>메뉴 고르기</b><span>음식은 하나, 음료는 마음껏</span></li>
+          <li><b>이름 적고 주문 보내기</b><span>마음이 바뀌면 같은 이름으로 다시 보내면 돼요</span></li>
+          <li><b>시간 맞춰 오기</b><span>따끈할 때 먹어야 제맛이에요</span></li>
+        </ol>
+      </section>
+
+      <section class="intro-sec">
+        <h2>초초홈카페 규칙</h2>
+        <ul class="rules">
+          <li>음식은 1인 1개. 셰프 힘들어요 🥲</li>
+          <li>시간 맞춰 와서 먹기. 음식 식어요!</li>
+          <li>마감 시간이 지나면 주문 끝. 셰프도 장 보러 가야 해요 🛒</li>
+          <li>인기 메뉴는 금방 사라져요. 고민은 짧게 🔥</li>
+          <li>먹고 싶은 메뉴가 있나요? 셰프에게 살짝 알려 주세요. 다음 메뉴에 나올지도 몰라요 👀</li>
+        </ul>
+      </section>
+
+      <button type="button" class="btn big" id="enterBtnBottom">메뉴 보러 가기 →</button>
+    </div>`;
+  $('#enterBtnBottom').addEventListener('click', enterMenu);
+  if (F.menu || F.loadError) updateIntroEvent();
+}
+function updateIntroEvent() {
+  const box = $('#introNext');
+  if (!box) return;
+  const ev = F.menu && F.menu.event;
+  if (!ev) {
+    box.innerHTML = `<p class="eyebrow">이번 오픈</p>
+      <p class="next-name">${F.loadError ? '오픈 소식을 불러오지 못했어요' : '지금은 준비 중이에요'}</p>
+      <p class="muted" style="margin:0">${F.loadError ? '잠시 후 새로고침해 주세요.' : '다음 오픈을 기다려 주세요!'}</p>`;
+    return;
+  }
+  const when = [fmtDate(ev.date), fmtTime(ev.time)].filter(Boolean).join(' ');
+  box.innerHTML = `<p class="eyebrow">이번 오픈</p>
+    <p class="next-name">${esc(ev.name)}</p>
+    ${when ? `<p class="next-when">${esc(when)}</p>` : ''}
+    ${ev.deadline ? `<p class="next-deadline${F.menu.closed ? ' closed' : ''}">${F.menu.closed ? '주문이 마감됐어요' : esc(fmtDeadline(ev.deadline)) + '까지 주문'}</p>` : ''}
+    <button type="button" class="btn" id="enterBtnTop">메뉴 보러 가기 →</button>`;
+  $('#enterBtnTop').addEventListener('click', enterMenu);
+}
+function showIntro() {
+  F.intro = true;
+  window.scrollTo(0, 0);
+  renderIntro();
+}
+function findItem(id) {
+  return F.menu.food.concat(F.menu.drinks).find(i => i.id === id);
+}
+function optsOf(it) {
+  return String((it && it.options) || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+function isPicked(id, kind) {
+  return kind === 'food' ? F.food === id : F.drinks.has(id);
+}
+function pickedLabel(id) {
+  const it = findItem(id);
+  return it.name + (F.choice[id] ? ` (${F.choice[id]})` : '');
+}
+function lockReason(it, kind) {
+  if (F.menu.closed) return '주문 마감';
+  if (it.muted) return it.muted;
+  if (!F.menu.oneSlowPerPerson || !it.limited) return '';
+  if (isPicked(it.id, kind)) return '';
+  const others = kind === 'food' ? [...F.drinks] : [F.food, ...F.drinks].filter(Boolean);
+  return others.some(id => (findItem(id) || {}).limited) ? '스페셜 메뉴는 1인 1개까지' : '';
+}
+function cardHTML(it, kind) {
+  const opts = optsOf(it);
+  return `<div class="card" data-kind="${kind}" data-id="${esc(it.id)}">
+    <button type="button" class="card-hit" aria-pressed="false">
+      <div class="photo">${photo(it.photo, it.name)}</div>
+      <div class="card-body"><div class="card-name">${esc(it.name)}</div>${it.ingredients ? `<div class="card-ing">${esc(it.ingredients)}</div>` : ''}</div>
+    </button>
+    ${opts.length ? `<div class="opts" role="group" aria-label="${esc(it.name)} 옵션">${opts.map(o => `<button type="button" class="opt" data-opt="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join('')}</div>` : ''}
+    ${it.badge ? `<span class="badge${it.badge.indexOf('마지막') === 0 ? ' last' : ''}">${esc(it.badge)}</span>` : ''}
+    <span class="check" aria-hidden="true">✓</span>
+    <span class="reason" hidden></span>
+  </div>`;
+}
+function renderFamily() {
+  const m = F.menu;
+  $('#bar').hidden = true;
+  if (!m.event) {
+    $('#app').innerHTML = `<div class="empty"><p class="eyebrow">${esc(CAFE)}</p><h1>지금은 카페 문이 닫혀 있어요</h1><p class="muted">다음 메뉴가 올라오면 다시 확인해 주세요.</p></div>`;
+    return;
+  }
+  // Drop picks that are no longer allowed.
+  if (F.food && (!findItem(F.food) || findItem(F.food).muted)) F.food = '';
+  F.drinks.forEach(id => { if (!findItem(id) || findItem(id).muted) F.drinks.delete(id); });
+  if (m.closed) { F.food = ''; F.drinks.clear(); }
+
+  const ev = m.event;
+  $('#app').innerHTML = `
+    <header class="hero">
+      <p class="eyebrow">${esc(CAFE)}</p>
+      <h1>${esc(ev.name)}</h1>
+      <div class="when">${ev.date ? `<span class="chip">${esc(fmtDate(ev.date))}</span>` : ''}${ev.time ? `<span class="chip">${esc(fmtTime(ev.time))}</span>` : ''}</div>
+      ${ev.deadline ? `<p class="deadline${m.closed ? ' closed' : ''}">${m.closed ? '주문이 마감됐어요' : esc(fmtDeadline(ev.deadline)) + '까지 주문해 주세요'}</p>` : ''}
+      ${ev.note ? `<p class="note">${esc(ev.note)}</p>` : ''}
+    </header>
+    ${m.food.length ? `<section class="sec"><div class="sec-head"><h2>오늘의 메뉴</h2><span class="hint">하나만 골라 주세요 (셰프 힘들어요)</span></div>
+      <div class="grid">${m.food.map(i => cardHTML(i, 'food')).join('')}</div></section>` : ''}
+    ${m.drinks.length ? `<section class="sec"><div class="sec-head"><h2>음료</h2><span class="hint">원하는 만큼 골라 주세요</span></div>
+      <div class="grid">${m.drinks.map(i => cardHTML(i, 'drink')).join('')}</div></section>` : ''}
+    ${m.closed ? `<section class="order-panel"><h2>주문이 마감됐어요</h2><p class="muted" style="margin:0">다음 카페 때 만나요!</p></section>` : `
+    <section class="order-panel" id="order">
+      <h2>내 주문</h2>
+      <ul class="picks" id="picks"></ul>
+      <form id="orderForm" class="field" novalidate>
+        <label for="guestName">이름</label>
+        <input type="text" id="guestName" maxlength="60" autocomplete="given-name" placeholder="예: 할머니" value="${esc(F.name)}">
+        <p class="hint" style="margin:0">이미 주문했나요? 같은 이름으로 다시 보내면 주문이 바뀌어요.</p>
+        <button class="btn big" id="sendBtn" type="submit" style="margin-top:8px">주문 보내기</button>
+      </form>
+    </section>`}`;
+  $('#app').insertAdjacentHTML('beforeend', `<p class="about-link"><button type="button" id="aboutBtn">${esc(CAFE)}란?</button></p>`);
+  $('#aboutBtn').addEventListener('click', showIntro);
+  $$('#app .card').forEach(c => {
+    $('.card-hit', c).addEventListener('click', () => toggleItem(c.dataset.id, c.dataset.kind));
+    $$('.opt', c).forEach(b => b.addEventListener('click', () => chooseOption(c.dataset.id, c.dataset.kind, b.dataset.opt)));
+  });
+  if (!m.closed) {
+    $('#guestName').addEventListener('input', e => { F.name = e.target.value; });
+    $('#orderForm').addEventListener('submit', onSend);
+  }
+  updateCards();
+}
+function select(id, kind, on) {
+  if (kind === 'food') {
+    if (F.food && F.food !== id) delete F.choice[F.food];
+    F.food = on ? id : '';
+  } else if (on) F.drinks.add(id); else F.drinks.delete(id);
+  if (!on) delete F.choice[id];
+  else if (!F.choice[id] && optsOf(findItem(id)).length) F.choice[id] = optsOf(findItem(id))[0];
+}
+function toggleItem(id, kind) {
+  select(id, kind, !isPicked(id, kind));
+  updateCards();
+}
+function chooseOption(id, kind, opt) {
+  const it = findItem(id);
+  if (!isPicked(id, kind) && lockReason(it, kind)) return;
+  if (!isPicked(id, kind)) select(id, kind, true);
+  F.choice[id] = opt;
+  updateCards();
+}
+function updateCards() {
+  $$('#app .card').forEach(c => {
+    const it = findItem(c.dataset.id);
+    const kind = c.dataset.kind;
+    const on = isPicked(it.id, kind);
+    const why = on ? '' : lockReason(it, kind);
+    c.classList.toggle('on', on);
+    c.classList.toggle('off', !!why);
+    const hit = $('.card-hit', c);
+    hit.setAttribute('aria-pressed', on ? 'true' : 'false');
+    hit.disabled = !!why;
+    $$('.opt', c).forEach(b => {
+      b.setAttribute('aria-pressed', on && F.choice[it.id] === b.dataset.opt ? 'true' : 'false');
+      b.disabled = !!why;
+    });
+    const r = $('.reason', c);
+    r.textContent = why;
+    r.hidden = !why;
+  });
+  if (F.menu.closed) return;
+  const food = F.food ? pickedLabel(F.food) : '';
+  const drinks = [...F.drinks].map(pickedLabel);
+  $('#picks').innerHTML = !food && !drinks.length
+    ? `<li class="muted">위에서 음식이나 음료를 눌러 담아 주세요.</li>`
+    : `${food ? `<li><span class="k">음식</span><span>${esc(food)}</span></li>` : ''}${drinks.length ? `<li><span class="k">음료</span><span>${esc(drinks.join(', '))}</span></li>` : ''}`;
+  const n = (food ? 1 : 0) + drinks.length;
+  const bar = $('#bar');
+  bar.hidden = n === 0;
+  bar.innerHTML = `<span>${n}개 선택</span><a class="btn small" href="#order" onclick="event.preventDefault();document.getElementById('order').scrollIntoView({behavior:'smooth'})">확인하고 보내기</a>`;
+}
+async function onSend(e) {
+  e.preventDefault();
+  if (F.sending) return;
+  const name = F.name.trim();
+  if (!name) { toast('먼저 이름을 적어 주세요.', true); $('#guestName').focus(); return; }
+  if (!F.food && !F.drinks.size) { toast('음식이나 음료를 먼저 골라 주세요.', true); return; }
+  F.sending = true;
+  const btn = $('#sendBtn');
+  btn.disabled = true; btn.textContent = '보내는 중…';
+  try {
+    const res = await api('submitOrder', { eventId: F.menu.event.id, guestName: name, foodId: F.food, drinkIds: [...F.drinks], choices: F.choice });
+    store('local', 'cafeName', name);
+    F.menu = res.menu;
+    renderDone(res);
+  } catch (err) {
+    toast(cleanErr(err), true);
+    try { F.menu = await api('getMenu'); renderFamily(); } catch (_) { btn.disabled = false; btn.textContent = '주문 보내기'; }
+  } finally {
+    F.sending = false;
+  }
+}
+function renderDone(res) {
+  const o = res.order;
+  const ev = F.menu.event || {};
+  $('#bar').hidden = true;
+  $('#app').innerHTML = `<div class="done">
+    <div class="cup" aria-hidden="true">✓</div>
+    <h1>${esc(o.guestName)}님, ${res.updated ? '주문을 바꿨어요!' : '주문 고마워요!'}</h1>
+    <p class="muted" style="margin:0">${ev.date || ev.time ? esc([fmtDate(ev.date), fmtTime(ev.time)].filter(Boolean).join(' ')) + '에 만나요!' : '곧 만나요!'}</p>
+    <div class="order-panel"><ul class="picks">
+      ${o.foodName ? `<li><span class="k">음식</span><span>${esc(o.foodName)}</span></li>` : ''}
+      ${o.drinkNames ? `<li><span class="k">음료</span><span>${esc(o.drinkNames)}</span></li>` : ''}
+    </ul></div>
+    <button class="btn ghost" id="changeBtn">주문 바꾸기</button>
+  </div>`;
+  $('#changeBtn').addEventListener('click', () => { renderFamily(); window.scrollTo(0, 0); });
+}
+
+/* =====================================================================
+   ADMIN VIEW
+   ===================================================================== */
+const A = { pw: store('session', 'cafePw') || '', data: null, tab: 'events', orderEvent: '', photoData: '' };
+
+async function startAdmin() {
+  if (A.pw) {
+    try { A.data = await api('adminGetAll', A.pw); return renderAdmin(); }
+    catch (e) { store('session', 'cafePw', null); A.pw = ''; }
+  }
+  renderLogin();
+}
+function renderLogin() {
+  $('#app').innerHTML = `<form class="login" id="loginForm">
+    <p class="eyebrow">${esc(CAFE)}</p><h1 style="font-size:36px">주방</h1>
+    <div class="field"><label for="pw">비밀번호</label><input type="password" id="pw" autocomplete="current-password" autofocus></div>
+    <button class="btn" type="submit">열기</button></form>`;
+  $('#loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pw = $('#pw').value;
+    try {
+      A.data = await api('adminGetAll', pw);
+      A.pw = pw; store('session', 'cafePw', pw);
+      renderAdmin();
+    } catch (err) { toast(cleanErr(err), true); }
+  });
+}
+function liveEvent() { return A.data.events.find(e => e.live === true || e.live === 'TRUE'); }
+const isTrue = v => v === true || v === 'TRUE' || v === 'true';
+const itemById = id => A.data.items.find(i => i.id === id);
+const idList = v => String(v || '').split(',').map(s => s.trim()).filter(Boolean);
+
+async function adminCall(fn, args, okMsg, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    A.data = await api(fn, A.pw, ...args);
+    closeModal();
+    renderAdmin();
+    if (okMsg) toast(okMsg);
+    return true;
+  } catch (e) {
+    toast(cleanErr(e), true);
+    if (btn) btn.disabled = false;
+    return false;
+  }
+}
+
+function renderAdmin() {
+  const tabs = [['events', '이벤트'], ['menu', '메뉴'], ['orders', '주문']];
+  $('#app').innerHTML = `
+    <div class="topbar">
+      <div><p class="eyebrow">${esc(CAFE)}</p><h1>주방</h1></div>
+      <div class="row-actions">
+        <a class="btn ghost small" href="/" target="_blank" rel="noopener">가족 페이지 열기</a>
+        <button class="btn ghost small" id="refreshBtn">새로고침</button>
+      </div>
+    </div>
+    <div class="tabs" role="tablist" style="margin-bottom:20px">${tabs.map(([k, l]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${A.tab === k}">${l}</button>`).join('')}</div>
+    <div id="main"></div>`;
+  $$('.tab').forEach(b => b.addEventListener('click', () => { A.tab = b.dataset.tab; renderAdmin(); }));
+  $('#refreshBtn').addEventListener('click', async () => { try { A.data = await api('adminGetAll', A.pw); renderAdmin(); toast('최신 상태예요'); } catch (e) { toast(cleanErr(e), true); } });
+  ({ events: renderEvents, menu: renderMenu, orders: renderOrders })[A.tab]();
+}
+
+/* ----- Events tab ----- */
+function renderEvents() {
+  const evs = A.data.events.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  $('#main').innerHTML = `
+    <div class="sec-head" style="margin-bottom:14px"><h2 style="font-size:26px">이벤트</h2><button class="btn small" id="newEv">새 이벤트</button></div>
+    <p class="hint" style="margin-top:0"><b>공개 중</b>인 이벤트만 가족 페이지에 보여요.</p>
+    <div class="list">${evs.length ? evs.map(ev => {
+      const n = A.data.orders.filter(o => o.eventId === ev.id).length;
+      return `<div class="item-row"><div>
+          <h3>${esc(ev.name)} ${isTrue(ev.live) ? '<span class="tag live">공개 중</span>' : ''}</h3>
+          <div class="meta">${esc(fmtDate(ev.date))}${ev.time ? ' · ' + esc(fmtTime(ev.time)) : ''} · 메뉴 ${idList(ev.itemIds).length}개 · 주문 ${n}건${ev.deadline ? ' · 마감 ' + esc(fmtDeadline(ev.deadline)) : ''}</div>
+        </div>
+        <div class="row-actions">
+          ${isTrue(ev.live) ? '' : `<button class="btn ghost small" data-live="${esc(ev.id)}">공개하기</button>`}
+          <button class="btn ghost small" data-orders="${esc(ev.id)}">주문 보기</button>
+          <button class="btn small" data-edit="${esc(ev.id)}">수정</button>
+        </div></div>`;
+    }).join('') : `<div class="empty"><h2>아직 이벤트가 없어요</h2><p class="muted">메뉴 탭에서 음식과 음료를 추가한 뒤 첫 이벤트를 만들어 보세요.</p></div>`}</div>`;
+  $('#newEv').addEventListener('click', () => editEvent(null));
+  $$('[data-edit]').forEach(b => b.addEventListener('click', () => editEvent(A.data.events.find(e => e.id === b.dataset.edit))));
+  $$('[data-orders]').forEach(b => b.addEventListener('click', () => { A.tab = 'orders'; A.orderEvent = b.dataset.orders; renderAdmin(); }));
+  $$('[data-live]').forEach(b => b.addEventListener('click', () => {
+    const ev = A.data.events.find(e => e.id === b.dataset.live);
+    adminCall('adminSaveEvent', [{ ...ev, itemIds: idList(ev.itemIds), oneSlowPerPerson: isTrue(ev.oneSlowPerPerson), live: true }], '가족 페이지에 공개했어요', b);
+  }));
+}
+function editEvent(ev) {
+  const e = ev || { name: '', date: '', time: '', deadline: '', note: '', itemIds: '', timeBudget: '', oneSlowPerPerson: false, live: !liveEvent() };
+  const chosen = new Set(idList(e.itemIds));
+  const saved = idList(e.itemIds);
+  const rank = id => { const n = saved.indexOf(id); return n < 0 ? 1e9 : n; };
+  const group = (type, title) => {
+    // Items already on this event come first, in their saved order.
+    const list = A.data.items.filter(i => i.type === type).sort((a, b) => rank(a.id) - rank(b.id));
+    return `<div class="group-title">${title}</div>` + (list.length ? `<div class="pick-group">${list.map(i => `
+      <div class="pick-row">
+        <label><input type="checkbox" name="itemIds" value="${esc(i.id)}" ${chosen.has(i.id) ? 'checked' : ''}>
+          ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer">` : '<span class="thumb"></span>'}
+          <span><b>${esc(i.name)}</b><br><span class="meta">${i.prepMinutes ? esc(i.prepMinutes) + '분' : '시간 미정'}${isTrue(i.restricted) ? ' · <span class="tag lim">한정</span>' : ''}</span></span>
+        </label>
+        <span class="move"><button type="button" class="mv" data-dir="up" aria-label="${esc(i.name)} 위로">↑</button><button type="button" class="mv" data-dir="down" aria-label="${esc(i.name)} 아래로">↓</button></span>
+      </div>`).join('')}</div>` : `<p class="hint" style="padding:0 6px">아직 ${type === 'drink' ? '음료가' : '음식이'} 없어요.</p>`);
+  };
+  openModal(`
+    <div class="modal-head"><h2>${ev ? '이벤트 수정' : '새 이벤트'}</h2><button class="x" data-close aria-label="닫기">×</button></div>
+    <form id="evForm" class="list" novalidate>
+      <div class="field"><label for="evName">이벤트 이름</label><input type="text" id="evName" value="${esc(e.name)}" placeholder="일요일 브런치"></div>
+      <div class="two">
+        <div class="field"><label for="evDate">날짜</label><input type="date" id="evDate" value="${esc(e.date)}"></div>
+        <div class="field"><label for="evTime">시간</label><input type="time" id="evTime" value="${esc(e.time)}"></div>
+      </div>
+      <div class="field"><label for="evDeadline">주문 마감 (선택)</label><input type="datetime-local" id="evDeadline" value="${esc(e.deadline)}"><span class="hint">이 시간이 지나면 가족 페이지에서 주문이 닫혀요.</span></div>
+      <div class="field"><label for="evNote">가족에게 남길 말 (선택)</label><input type="text" id="evNote" value="${esc(e.note)}" placeholder="예: 편한 옷 입고 오세요"></div>
+      <div class="field"><label>오늘의 메뉴</label><span class="hint">↑ ↓ 로 가족 페이지에 보이는 순서를 바꿀 수 있어요.</span><div class="pick-list">${group('food', '음식')}${group('drink', '음료')}</div></div>
+      <div class="field"><label for="evBudget">주방 준비 시간 한도 (분, 선택)</label>
+        <input type="number" id="evBudget" min="0" step="5" value="${esc(e.timeBudget)}" placeholder="예: 90">
+        <span class="hint">주문의 준비 시간 합계가 이 한도를 넘게 되면 <b>한정</b> 메뉴가 자동으로 마감돼요. 다른 메뉴는 계속 열려 있어요.</span></div>
+      <label class="checkline"><input type="checkbox" id="evOneSlow" ${isTrue(e.oneSlowPerPerson) ? 'checked' : ''}>
+        <span>한정 메뉴는 1인 1개까지<small>한정 메뉴를 하나 고르면 그 사람의 다른 한정 메뉴는 잠겨요.</small></span></label>
+      <label class="checkline"><input type="checkbox" id="evLive" ${isTrue(e.live) ? 'checked' : ''}>
+        <span>가족 페이지에 공개<small>켜면 다른 이벤트는 자동으로 비공개가 돼요.</small></span></label>
+      <div class="row-actions" style="justify-content:space-between">
+        ${ev ? `<button type="button" class="btn danger small" id="evDel">이벤트 삭제</button>` : '<span></span>'}
+        <div class="row-actions"><button type="button" class="btn ghost" data-close>취소</button><button class="btn" type="submit" id="evSave">저장</button></div>
+      </div>
+    </form>`);
+  $$('#evForm .mv').forEach(b => b.addEventListener('click', () => {
+    const row = b.closest('.pick-row');
+    if (b.dataset.dir === 'up' && row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling);
+    if (b.dataset.dir === 'down' && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
+    b.focus();
+  }));
+  $('#evForm').addEventListener('submit', x => {
+    x.preventDefault();
+    adminCall('adminSaveEvent', [{
+      id: ev ? ev.id : '',
+      name: $('#evName').value, date: $('#evDate').value, time: $('#evTime').value, deadline: $('#evDeadline').value, note: $('#evNote').value,
+      itemIds: $$('input[name=itemIds]:checked').map(c => c.value),
+      timeBudget: $('#evBudget').value, oneSlowPerPerson: $('#evOneSlow').checked, live: $('#evLive').checked,
+    }], '이벤트를 저장했어요', $('#evSave'));
+  });
+  if (ev) armDelete($('#evDel'), '한 번 더 누르면 이벤트와 주문이 모두 삭제돼요', () => adminCall('adminDeleteEvent', [ev.id], '이벤트를 삭제했어요'));
+}
+function armDelete(btn, confirmText, action) {
+  let armed = false;
+  btn.addEventListener('click', () => {
+    if (!armed) { armed = true; btn.textContent = confirmText; setTimeout(() => { if (btn.isConnected) { armed = false; btn.textContent = '삭제'; } }, 4000); return; }
+    btn.disabled = true; action();
+  });
+}
+
+/* ----- Menu tab ----- */
+function renderMenu() {
+  const section = (type, title) => {
+    const list = A.data.items.filter(i => i.type === type).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    return `<section class="sec"><div class="sec-head"><h2 style="font-size:26px">${title}</h2><button class="btn small" data-add="${type}">${type === 'drink' ? '음료' : '음식'} 추가</button></div>
+      ${list.length ? `<div class="grid">${list.map(i => `
+        <button type="button" class="card admin-card" data-view="${esc(i.id)}">
+          <div class="photo">${photo(i.photo, i.name)}</div>
+          <div class="card-body"><div class="card-name">${esc(i.name)}</div>
+            <div class="meta">${i.options ? esc(i.options) + ' · ' : ''}${i.prepMinutes ? esc(i.prepMinutes) + '분' : '시간 미정'}${isTrue(i.restricted) ? ` <span class="tag lim">한정${i.maxOrders ? ' · 최대 ' + esc(i.maxOrders) + '개' : ''}</span>` : ''}</div>
+            ${i.ingredients ? `<div class="card-ing">${esc(i.ingredients)}</div>` : ''}</div>
+        </button>`).join('')}</div>` : `<p class="muted">아직 ${type === 'drink' ? '음료가' : '음식이'} 없어요.</p>`}</section>`;
+  };
+  $('#main').innerHTML = section('food', '음식') + section('drink', '음료');
+  $$('[data-add]').forEach(b => b.addEventListener('click', () => editItem(null, b.dataset.add)));
+  $$('[data-view]').forEach(b => b.addEventListener('click', () => viewItem(itemById(b.dataset.view))));
+}
+function viewItem(i) {
+  openModal(`
+    <div class="modal-head"><h2>${esc(i.name)}</h2><button class="x" data-close aria-label="닫기">×</button></div>
+    <div class="preview">${photo(i.photo, i.name)}</div>
+    <div class="meta"><span class="tag">${i.type === 'drink' ? '음료' : '음식'}</span>
+      <span class="tag">${i.prepMinutes ? '만드는 시간 ' + esc(i.prepMinutes) + '분' : '시간 미정'}</span>${i.options ? `<span class="tag">옵션: ${esc(i.options)}</span>` : ''}
+      ${isTrue(i.restricted) ? `<span class="tag lim">한정${i.maxOrders ? ' · 이벤트당 최대 ' + esc(i.maxOrders) + '개' : ''}</span>` : ''}</div>
+    <div><p class="eyebrow" style="margin:0 0 4px">재료</p><p style="margin:0">${esc(i.ingredients) || '<span class="muted">등록된 재료가 없어요</span>'}</p></div>
+    <div><p class="eyebrow" style="margin:0 0 6px">만드는 법</p>${i.howTo ? `<pre class="howto">${esc(i.howTo)}</pre>` : '<p class="muted" style="margin:0">아직 만드는 법이 없어요.</p>'}</div>
+    <div class="row-actions" style="justify-content:space-between">
+      <button class="btn danger small" id="itDel">삭제</button>
+      <button class="btn" id="itEdit">수정</button>
+    </div>`);
+  $('#itEdit').addEventListener('click', () => editItem(i, i.type));
+  armDelete($('#itDel'), '한 번 더 누르면 삭제돼요', () => adminCall('adminDeleteItem', [i.id], '삭제했어요'));
+}
+function editItem(it, type) {
+  const i = it || { type, name: '', ingredients: '', photo: '', prepMinutes: '', howTo: '', restricted: false, maxOrders: '', options: '' };
+  A.photoData = '';
+  openModal(`
+    <div class="modal-head"><h2>${type === 'drink' ? '음료' : '음식'} ${it ? '수정' : '추가'}</h2><button class="x" data-close aria-label="닫기">×</button></div>
+    <form id="itForm" class="list" novalidate>
+      <div class="two">
+        <div class="field"><label for="itName">이름</label><input type="text" id="itName" value="${esc(i.name)}" placeholder="${type === 'drink' ? '아이스 말차 라떼' : '팬케이크'}"></div>
+        <div class="field"><label for="itType">종류</label><select id="itType"><option value="food" ${i.type !== 'drink' ? 'selected' : ''}>음식</option><option value="drink" ${i.type === 'drink' ? 'selected' : ''}>음료</option></select></div>
+      </div>
+      <div class="field"><label for="itIng">재료 (가족에게 보여요)</label><textarea id="itIng" placeholder="밀가루, 달걀, 우유, 버터, 메이플 시럽">${esc(i.ingredients)}</textarea></div>
+      <div class="field"><label>사진</label>
+        <div class="preview" id="itPrev">${photo(i.photo, i.name || '?')}</div>
+        <input type="file" id="itFile" accept="image/*">
+        <input type="url" id="itUrl" value="${esc(i.photo)}" placeholder="…또는 이미지 링크 붙여넣기">
+      </div>
+      <div class="field"><label for="itOpts">옵션 (선택)</label><input type="text" id="itOpts" value="${esc(i.options)}" placeholder="예: 핫, 아이스"><span class="hint">쉼표로 나눠 적으면 가족이 그중 하나를 골라요.</span></div>
+      <div class="field"><label for="itMin">만드는 시간 (분)</label><input type="number" id="itMin" min="0" step="1" value="${esc(i.prepMinutes)}"></div>
+      <div class="field"><label for="itHow">만드는 법 (나만 보여요)</label><textarea id="itHow" style="min-height:140px" placeholder="1. 달걀을 잘 풀어요…">${esc(i.howTo)}</textarea></div>
+      <label class="checkline"><input type="checkbox" id="itLim" ${isTrue(i.restricted) ? 'checked' : ''}>
+        <span>한정 메뉴<small>주문이 다 차거나 주방이 너무 바빠지면 자동으로 마감돼요. 간단한 메뉴는 꺼 두세요.</small></span></label>
+      <div class="field" id="maxWrap" ${isTrue(i.restricted) ? '' : 'hidden'}><label for="itMax">이벤트당 최대 주문 수 (선택)</label><input type="number" id="itMax" min="0" step="1" value="${esc(i.maxOrders)}" placeholder="예: 2"></div>
+      <div class="row-actions" style="justify-content:flex-end"><button type="button" class="btn ghost" data-close>취소</button><button class="btn" type="submit" id="itSave">저장</button></div>
+    </form>`);
+  $('#itLim').addEventListener('change', e => { $('#maxWrap').hidden = !e.target.checked; });
+  $('#itUrl').addEventListener('input', e => { A.photoData = ''; $('#itFile').value = ''; $('#itPrev').innerHTML = photo(e.target.value.trim(), $('#itName').value || '?'); });
+  $('#itFile').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      A.photoData = await shrinkImage(f, 1200);
+      $('#itPrev').innerHTML = `<img src="${A.photoData}" alt="">`;
+      $('#itUrl').value = '';
+    } catch (err) { toast('사진을 읽을 수 없어요. JPG나 PNG 파일로 다시 시도해 주세요.', true); }
+  });
+  $('#itForm').addEventListener('submit', x => {
+    x.preventDefault();
+    const btn = $('#itSave');
+    if (A.photoData) btn.textContent = '사진 올리는 중…';
+    adminCall('adminSaveItem', [{
+      id: it ? it.id : '', type: $('#itType').value, name: $('#itName').value, ingredients: $('#itIng').value,
+      photo: $('#itUrl').value.trim(), photoData: A.photoData, prepMinutes: $('#itMin').value, howTo: $('#itHow').value,
+      restricted: $('#itLim').checked, maxOrders: $('#itMax').value, options: $('#itOpts').value,
+    }], '저장했어요', btn).then(ok => { if (!ok) btn.textContent = '저장'; });
+  });
+}
+function shrinkImage(file, max) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = reject;
+    r.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const s = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+/* ----- Orders tab ----- */
+function renderOrders() {
+  const evs = A.data.events.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  if (!evs.length) { $('#main').innerHTML = `<div class="empty"><h2>아직 이벤트가 없어요</h2></div>`; return; }
+  if (!evs.find(e => e.id === A.orderEvent)) A.orderEvent = (liveEvent() || evs[0]).id;
+  const ev = evs.find(e => e.id === A.orderEvent);
+  const st = A.data.statuses[ev.id] || { counts: {}, totalMinutes: 0, budget: 0, muted: {} };
+  const orders = A.data.orders.filter(o => o.eventId === ev.id).sort((a, b) => String(a.submittedAt).localeCompare(String(b.submittedAt)));
+  const tally = {};
+  orders.forEach(o => {
+    let ch = {};
+    try { ch = JSON.parse(o.choices || '{}') || {}; } catch (_) {}
+    [o.foodId].concat(idList(o.drinkIds)).filter(Boolean).forEach(id => {
+      const key = id + '|' + (ch[id] || '');
+      tally[key] = tally[key] || { it: itemById(id), opt: ch[id] || '', n: 0 };
+      tally[key].n++;
+    });
+  });
+  const prep = Object.values(tally).filter(x => x.it)
+    .sort((a, b) => b.it.type.localeCompare(a.it.type) || a.it.name.localeCompare(b.it.name) || b.n - a.n);
+  const mutedNames = Object.keys(st.muted).map(id => (itemById(id) || {}).name).filter(Boolean);
+  $('#main').innerHTML = `
+    <div class="field" style="max-width:420px;margin-bottom:16px"><label for="ordEv">이벤트</label>
+      <select id="ordEv">${evs.map(e => `<option value="${esc(e.id)}" ${e.id === ev.id ? 'selected' : ''}>${esc(e.name)} · ${esc(fmtDate(e.date))}${isTrue(e.live) ? ' (공개 중)' : ''}</option>`).join('')}</select></div>
+    <div class="stats" style="margin-bottom:20px">
+      <div class="stat"><span class="muted">주문</span><b>${orders.length}</b></div>
+      <div class="stat"><span class="muted">총 준비 시간</span><b>${st.totalMinutes}분</b>${st.budget ? `<span class="muted">한도 ${st.budget}분</span>` : ''}</div>
+      <div class="stat"><span class="muted">지금 마감된 메뉴</span><b>${mutedNames.length}</b><span class="muted">${esc(mutedNames.join(', ')) || '없음'}</span></div>
+    </div>
+    <section class="sec"><h2 style="font-size:24px">준비할 것</h2>
+      ${prep.length ? `<div class="table-wrap"><table><thead><tr><th>메뉴</th><th>종류</th><th>수량</th><th>개당 시간</th></tr></thead><tbody>
+        ${prep.map(p => `<tr><td><button class="btn ghost small" data-view="${esc(p.it.id)}">${esc(p.it.name)}${p.opt ? ' (' + esc(p.opt) + ')' : ''}</button> ${st.muted[p.it.id] ? '<span class="tag off">마감</span>' : ''}</td><td>${p.it.type === 'drink' ? '음료' : '음식'}</td><td class="num"><b>× ${p.n}</b></td><td class="num">${esc(p.it.prepMinutes || 0)}분</td></tr>`).join('')}
+      </tbody></table></div>` : '<p class="muted">아직 주문이 없어요.</p>'}
+    </section>
+    <section class="sec"><h2 style="font-size:24px">누가 무엇을 주문했나요</h2>
+      ${orders.length ? `<div class="table-wrap"><table><thead><tr><th>이름</th><th>음식</th><th>음료</th><th>보낸 시간</th><th></th></tr></thead><tbody>
+        ${orders.map(o => `<tr><td><b>${esc(o.guestName)}</b></td><td>${esc(o.foodName) || '<span class="muted">—</span>'}</td><td>${esc(o.drinkNames) || '<span class="muted">—</span>'}</td>
+          <td class="num muted">${o.submittedAt ? esc(new Date(o.submittedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })) : ''}</td>
+          <td><button class="btn danger small" data-del="${esc(o.id)}">삭제</button></td></tr>`).join('')}
+      </tbody></table></div>` : '<p class="muted">아직 주문이 없어요. 가족 링크를 공유해 보세요.</p>'}
+    </section>`;
+  $('#ordEv').addEventListener('change', e => { A.orderEvent = e.target.value; renderOrders(); });
+  $$('[data-view]').forEach(b => b.addEventListener('click', () => viewItem(itemById(b.dataset.view))));
+  $$('[data-del]').forEach(b => armDelete(b, '정말 삭제할까요?', () => adminCall('adminDeleteOrder', [b.dataset.del], '주문을 삭제했어요')));
+}
+
+/* ---------- Boot ---------- */
+if (MODE === 'admin') startAdmin(); else startFamily();
+</script>
+</body>
+</html>
